@@ -1,21 +1,24 @@
-# Cognify-Termux-Desktop-Setup
-
-A high-performance, one-click automation script to transform your **Android** device into a professional **Linux Desktop** environment using **Termux-X11**.
-
-## Features
-* **Native Speed**: Runs directly on Termux without proot-distro for maximum performance.
-* **Premium UI**: Pre-configured with **XFCE4** and **Catppuccin-Mocha** theme.
-* **Desktop Browser**: Includes **Chromium** with full support for desktop extensions.
-* **Custom Assets**: Pre-loaded with high-quality wallpapers and optimized icon packs.
-
----
-
-## Installation Guide
-
-### Step 1: Install Required Apps
-Download and install the latest versions of **Termux** and **Termux-X11** from **F-Droid**.
-
-### Step 2: Run the Setup Script
-Open Termux and paste the following command:
-```bash
-curl -sL [https://github.com/Naruto859/Cognify-Termux-Desktop-Setup/raw/main/install.sh](https://github.com/Naruto859/Cognify-Termux-Desktop-Setup/raw/main/install.sh) | bash
+Cognify-Termux-Desktop-Setup
+​A one-click automation script to install a high-performance Linux Desktop environment on Android using Termux-X11.
+​Installation
+​Run this command in Termux to start the setup:
+​curl -sL https://github.com/Naruto859/Cognify-Termux-Desktop-Setup/raw/main/install.sh | bash
+​Post-Installation Steps
+​1. Grant Storage Permission
+​Run this command to allow the browser to access your files:
+​termux-setup-storage
+​2. Launch the Desktop
+​Open the Termux-X11 app.
+​Go back to Termux and type:
+​./start-desktop
+​Important Notes & Requirements
+​Architecture: This setup is for ARM64 (AArch64) devices only.
+​Storage: Ensure you have at least 5 GB of free internal storage.
+​Battery & Heat: Device may heat up and battery may drain faster during use.
+​Repo Errors: If pkg update fails, run termux-change-repo and switch to a stable mirror.
+​How to Change Wallpapers
+​All wallpapers are saved in the ~/Wallpapers folder.
+​Right-click on the desktop.
+​Go to Desktop Settings.
+​Choose your preferred PNG image from the list.
+​Maintained by CognifyTech
