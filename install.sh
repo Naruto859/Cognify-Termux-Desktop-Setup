@@ -35,7 +35,6 @@ echo ">>> [6/6] start-desktop script ban raha hai..."
 cat > ~/start-desktop << 'EOF'
 #!/data/data/com.termux/files/usr/bin/bash
 
-# PATH fix — commands milenge
 export PATH="/data/data/com.termux/files/usr/bin:$PATH"
 export DISPLAY=:1
 
@@ -43,22 +42,36 @@ export DISPLAY=:1
 termux-x11 :1 &
 sleep 4
 
-# Wallpaper set karo
+# ── Wallpaper folder sahi set karo (Downloads wala error fix) ──
+xfconf-query -c xfce4-desktop \
+  -p /backdrop/screen0/monitor0/workspace0/image-path \
+  -s "$HOME/Wallpapers" --create -t string 2>/dev/null
+
+xfconf-query -c xfce4-desktop \
+  -p /backdrop/screen0/monitor0/workspace0/image-show \
+  -s true --create -t bool 2>/dev/null
+
+# ── Wallpaper 1.png set karo ──
 xfconf-query -c xfce4-desktop \
   -p /backdrop/screen0/monitor0/workspace0/last-image \
-  -s "$HOME/Wallpapers/1.png" 2>/dev/null
+  -s "$HOME/Wallpapers/1.png" --create -t string 2>/dev/null
 
-# Theme apply karo
+# ── Style: Zoomed ──
+xfconf-query -c xfce4-desktop \
+  -p /backdrop/screen0/monitor0/workspace0/image-style \
+  -s 5 --create -t int 2>/dev/null
+
+# ── Theme apply karo ──
 xfconf-query -c xsettings \
   -p /Net/ThemeName \
   -s "Catppuccin-Mocha-Standard-Blue-Dark" 2>/dev/null
 
-# Icon theme apply karo
+# ── Icon theme apply karo ──
 xfconf-query -c xsettings \
   -p /Net/IconThemeName \
   -s "Papirus-Dark" 2>/dev/null
 
-# XFCE4 launch karo
+# ── XFCE4 launch ──
 xfce4-session
 EOF
 chmod +x ~/start-desktop
