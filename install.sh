@@ -1,82 +1,57 @@
 #!/data/data/com.termux/files/usr/bin/bash
 
 # ─────────────────────────────────────────
-#   Cognify Termux Desktop Setup
-#   github.com/Naruto859/Cognify-Termux-Desktop-Setup
+#   Cognify Termux Desktop Setup (v2.0)
+#   Fixes: Wallpaper Path & DPKG Errors
 # ─────────────────────────────────────────
 
-export PATH="/data/data/com.termux/files/usr/bin:$PATH"
-
-echo ">>> [1/6] Packages update ho rahe hain..."
+echo ">>> [1/6] System Update & DPKG Fix..."
 pkg update -y
 apt-get upgrade -y -o Dpkg::Options::="--force-confold"
 pkg install x11-repo -y
 
-echo ">>> [2/6] XFCE4, Chromium, Termux-X11 install ho raha hai..."
+echo ">>> [2/6] Installing Desktop Environments..."
 pkg install xfce4 xfce4-goodies chromium termux-x11-nightly papirus-icon-theme -y
 
-echo ">>> [3/6] Configs download ho rahe hain..."
-curl -L https://github.com/Naruto859/Cognify-Termux-Desktop-Setup/raw/main/configs.tar.gz \
-  -o ~/configs.tar.gz || { echo "ERROR: Config download failed!"; exit 1; }
+echo ">>> [3/6] Downloading Configs..."
+curl -L "https://github.com/Naruto859/Cognify-Termux-Desktop-Setup/raw/main/configs.tar.gz" -o ~/configs.tar.gz
 
-echo ">>> [4/6] Wallpapers download ho rahe hain..."
+echo ">>> [4/6] Downloading Wallpapers (1-12)..."
 mkdir -p ~/Wallpapers
-for i in {1..9}; do
-  curl -L --fail \
-    "https://github.com/Naruto859/Cognify-Termux-Desktop-Setup/raw/main/wallpapers/$i.png" \
-    -o ~/Wallpapers/$i.png || echo "  Wallpaper $i nahi mila, skip."
+for i in {1..12}; do
+  curl -L --fail "https://github.com/Naruto859/Cognify-Termux-Desktop-Setup/raw/main/wallpapers/$i.png" -o ~/Wallpapers/$i.png || echo "Skipping $i.png"
 done
 
-echo ">>> [5/6] Configs extract ho rahe hain..."
-tar -xzf ~/configs.tar.gz --strip-components=5 -C ~
+echo ">>> [5/6] Extracting Configs..."
+# Note: Removed --strip-components unless your tar is very nested
+tar -xvzf ~/configs.tar.gz -C ~ 
 rm ~/configs.tar.gz
 
-echo ">>> [6/6] start-desktop script ban raha hai..."
+echo ">>> [6/6] Creating start-desktop with Auto-Wallpaper Fix..."
 cat > ~/start-desktop << 'EOF'
 #!/data/data/com.termux/files/usr/bin/bash
-
-export PATH="/data/data/com.termux/files/usr/bin:$PATH"
 export DISPLAY=:1
 
-# X11 start karo
+# Start X11
 termux-x11 :1 &
-sleep 4
+sleep 3
 
-# ── Wallpaper folder sahi set karo (Downloads wala error fix) ──
-xfconf-query -c xfce4-desktop \
-  -p /backdrop/screen0/monitor0/workspace0/image-path \
-  -s "$HOME/Wallpapers" --create -t string 2>/dev/null
+# --- Dynamic Wallpaper Fix (No more NULL folder error) ---
+# Find the active monitor name automatically
+MONITOR=$(xfconf-query -c xfce4-desktop -p /backdrop/screen0 -l | grep -m1 "monitor" | cut -d'/' -f4)
 
-xfconf-query -c xfce4-desktop \
-  -p /backdrop/screen0/monitor0/workspace0/image-show \
-  -s true --create -t bool 2>/dev/null
+if [ ! -z "$MONITOR" ]; then
+    # Set the folder path to avoid "Downloads" error
+    xfconf-query -c xfce4-desktop -p /backdrop/screen0/$MONITOR/workspace0/image-folder -n -t string -s "$HOME/Wallpapers"
+    # Set the specific image
+    xfconf-query -c xfce4-desktop -p /backdrop/screen0/$MONITOR/workspace0/last-image -n -t string -s "$HOME/Wallpapers/1.png"
+    # Set style to Zoomed (5)
+    xfconf-query -c xfce4-desktop -p /backdrop/screen0/$MONITOR/workspace0/image-style -n -t int -s 5
+fi
 
-# ── Wallpaper 1.png set karo ──
-xfconf-query -c xfce4-desktop \
-  -p /backdrop/screen0/monitor0/workspace0/last-image \
-  -s "$HOME/Wallpapers/1.png" --create -t string 2>/dev/null
-
-# ── Style: Zoomed ──
-xfconf-query -c xfce4-desktop \
-  -p /backdrop/screen0/monitor0/workspace0/image-style \
-  -s 5 --create -t int 2>/dev/null
-
-# ── Theme apply karo ──
-xfconf-query -c xsettings \
-  -p /Net/ThemeName \
-  -s "Catppuccin-Mocha-Standard-Blue-Dark" 2>/dev/null
-
-# ── Icon theme apply karo ──
-xfconf-query -c xsettings \
-  -p /Net/IconThemeName \
-  -s "Papirus-Dark" 2>/dev/null
-
-# ── XFCE4 launch ──
+# Start Session
 xfce4-session
 EOF
-chmod +x ~/start-desktop
 
-echo ""
-echo "✅ Setup complete!"
-echo "▶  Termux-X11 app kholo, phir Termux mein likho:  ./start-desktop"
-echo ""
+chmod +x ~/start-desktop
+echo "✅ Setup Finished! Run ./start-desktop"
