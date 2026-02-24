@@ -5,8 +5,6 @@
 #   github.com/Naruto859/Cognify-Termux-Desktop-Setup
 # ─────────────────────────────────────────
 
-set -e
-
 echo ">>> [1/6] Packages update ho rahe hain..."
 pkg update -y
 apt-get upgrade -y -o Dpkg::Options::="--force-confold"
@@ -27,8 +25,10 @@ for i in {1..12}; do
     -o ~/Wallpapers/$i.png || echo "  Wallpaper $i nahi mila, skip."
 done
 
-echo ">>> [5/6] Configs extract ho rahe hain..."
-tar -xzf ~/configs.tar.gz -C ~
+echo ">>> [5/6] Configs extract ho rahe hain (sahi jagah)..."
+# FIX: -C / kyunki tar ke andar path hai: data/data/com.termux/files/home/...
+tar -xzf ~/configs.tar.gz -C /
+# Ab delete karo
 rm ~/configs.tar.gz
 
 echo ">>> [6/6] start-desktop script ban raha hai..."
@@ -37,16 +37,26 @@ cat > ~/start-desktop << 'EOF'
 
 # X11 start karo
 termux-x11 :1 &
-sleep 3
+sleep 4
 
 export DISPLAY=:1
 
-# Wallpaper force set karo (1.png — config name mismatch fix)
+# ── Wallpaper force set (config mein naam alag tha, 1.png fix) ──
 xfconf-query -c xfce4-desktop \
   -p /backdrop/screen0/monitor0/workspace0/last-image \
-  -s "$HOME/Wallpapers/1.png"
+  -s "$HOME/Wallpapers/1.png" 2>/dev/null
 
-# XFCE4 launch karo
+# ── Theme apply karo ──
+xfconf-query -c xsettings \
+  -p /Net/ThemeName \
+  -s "Catppuccin-Mocha-Standard-Blue-Dark" 2>/dev/null
+
+# ── Icon theme apply karo ──
+xfconf-query -c xsettings \
+  -p /Net/IconThemeName \
+  -s "Papirus-Dark" 2>/dev/null
+
+# ── XFCE4 launch ──
 xfce4-session
 EOF
 chmod +x ~/start-desktop
