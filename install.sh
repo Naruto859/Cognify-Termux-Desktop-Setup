@@ -19,16 +19,18 @@ curl -L https://github.com/Naruto859/Cognify-Termux-Desktop-Setup/raw/main/confi
 
 echo ">>> [4/6] Wallpapers download ho rahe hain..."
 mkdir -p ~/Wallpapers
-for i in {1..12}; do
+# FIX: Sirf 1 se 9 tak, 10-12 GitHub pe hain hi nahi
+for i in {1..9}; do
   curl -L --fail \
     "https://github.com/Naruto859/Cognify-Termux-Desktop-Setup/raw/main/wallpapers/$i.png" \
     -o ~/Wallpapers/$i.png || echo "  Wallpaper $i nahi mila, skip."
 done
 
-echo ">>> [5/6] Configs extract ho rahe hain (sahi jagah)..."
-# FIX: -C / kyunki tar ke andar path hai: data/data/com.termux/files/home/...
-tar -xzf ~/configs.tar.gz -C /
-# Ab delete karo
+echo ">>> [5/6] Configs extract ho rahe hain..."
+# FIX: --strip-components=5 se path prefix hat jaata hai
+# tar ke andar: data/data/com.termux/files/home/.config/...
+# strip karke seedha: ~/.config/... mein chali jaati hain files
+tar -xzf ~/configs.tar.gz --strip-components=5 -C ~
 rm ~/configs.tar.gz
 
 echo ">>> [6/6] start-desktop script ban raha hai..."
@@ -41,22 +43,22 @@ sleep 4
 
 export DISPLAY=:1
 
-# ── Wallpaper force set (config mein naam alag tha, 1.png fix) ──
+# Wallpaper set karo
 xfconf-query -c xfce4-desktop \
   -p /backdrop/screen0/monitor0/workspace0/last-image \
   -s "$HOME/Wallpapers/1.png" 2>/dev/null
 
-# ── Theme apply karo ──
+# Theme apply karo
 xfconf-query -c xsettings \
   -p /Net/ThemeName \
   -s "Catppuccin-Mocha-Standard-Blue-Dark" 2>/dev/null
 
-# ── Icon theme apply karo ──
+# Icon theme apply karo
 xfconf-query -c xsettings \
   -p /Net/IconThemeName \
   -s "Papirus-Dark" 2>/dev/null
 
-# ── XFCE4 launch ──
+# XFCE4 launch karo
 xfce4-session
 EOF
 chmod +x ~/start-desktop
