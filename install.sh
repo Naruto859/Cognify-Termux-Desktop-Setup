@@ -5,6 +5,8 @@
 #   github.com/Naruto859/Cognify-Termux-Desktop-Setup
 # ─────────────────────────────────────────
 
+export PATH="/data/data/com.termux/files/usr/bin:$PATH"
+
 echo ">>> [1/6] Packages update ho rahe hain..."
 pkg update -y
 apt-get upgrade -y -o Dpkg::Options::="--force-confold"
@@ -19,7 +21,6 @@ curl -L https://github.com/Naruto859/Cognify-Termux-Desktop-Setup/raw/main/confi
 
 echo ">>> [4/6] Wallpapers download ho rahe hain..."
 mkdir -p ~/Wallpapers
-# FIX: Sirf 1 se 9 tak, 10-12 GitHub pe hain hi nahi
 for i in {1..9}; do
   curl -L --fail \
     "https://github.com/Naruto859/Cognify-Termux-Desktop-Setup/raw/main/wallpapers/$i.png" \
@@ -27,9 +28,6 @@ for i in {1..9}; do
 done
 
 echo ">>> [5/6] Configs extract ho rahe hain..."
-# FIX: --strip-components=5 se path prefix hat jaata hai
-# tar ke andar: data/data/com.termux/files/home/.config/...
-# strip karke seedha: ~/.config/... mein chali jaati hain files
 tar -xzf ~/configs.tar.gz --strip-components=5 -C ~
 rm ~/configs.tar.gz
 
@@ -37,11 +35,13 @@ echo ">>> [6/6] start-desktop script ban raha hai..."
 cat > ~/start-desktop << 'EOF'
 #!/data/data/com.termux/files/usr/bin/bash
 
+# PATH fix — commands milenge
+export PATH="/data/data/com.termux/files/usr/bin:$PATH"
+export DISPLAY=:1
+
 # X11 start karo
 termux-x11 :1 &
 sleep 4
-
-export DISPLAY=:1
 
 # Wallpaper set karo
 xfconf-query -c xfce4-desktop \
