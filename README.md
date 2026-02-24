@@ -6,9 +6,11 @@ A one-click automation script to install a high-performance Linux Desktop enviro
 
 Run this command in Termux to start the setup:
 
+```bash
 curl -sL https://github.com/Naruto859/Cognify-Termux-Desktop-Setup/raw/main/install.sh | bash
+```
 
-## 🛠️ Post-Installation Steps
+## 🛠️ Post-Installation Step
 
 ### 1. Grant Storage Permission
 To allow the browser and apps to access your internal files, run:
