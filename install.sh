@@ -1,54 +1,92 @@
 #!/data/data/com.termux/files/usr/bin/bash
 
 # ─────────────────────────────────────────
-#   Cognify Termux Desktop - Final Fix (v3.0)
+#   Cognify Termux Desktop Setup
+#   github.com/Naruto859/Cognify-Termux-Desktop-Setup
 # ─────────────────────────────────────────
 
-echo ">>> [1/5] System Update (No more DPKG errors)..."
+export PATH="/data/data/com.termux/files/usr/bin:$PATH"
+
+echo ">>> [1/6] Packages update ho rahe hain..."
 pkg update -y
 apt-get upgrade -y -o Dpkg::Options::="--force-confold"
 pkg install x11-repo -y
 
-echo ">>> [2/5] Installing Packages..."
+echo ">>> [2/6] XFCE4, Chromium, Termux-X11 install ho raha hai..."
 pkg install xfce4 xfce4-goodies chromium termux-x11-nightly papirus-icon-theme -y
 
-echo ">>> [3/5] Downloading Assets..."
-curl -L "https://github.com/Naruto859/Cognify-Termux-Desktop-Setup/raw/main/configs.tar.gz" -o ~/configs.tar.gz
+echo ">>> [3/6] Configs download ho rahe hain..."
+curl -L https://github.com/Naruto859/Cognify-Termux-Desktop-Setup/raw/main/configs.tar.gz \
+  -o ~/configs.tar.gz || { echo "ERROR: Config download failed!"; exit 1; }
+
+echo ">>> [4/6] Wallpapers download ho rahe hain..."
 mkdir -p ~/Wallpapers
-for i in {1..12}; do
-  curl -L --fail "https://github.com/Naruto859/Cognify-Termux-Desktop-Setup/raw/main/wallpapers/$i.png" -o ~/Wallpapers/$i.png || echo "Skipped $i"
+for i in {1..9}; do
+  curl -L --fail \
+    "https://github.com/Naruto859/Cognify-Termux-Desktop-Setup/raw/main/wallpapers/$i.png" \
+    -o ~/Wallpapers/$i.png || echo "  Wallpaper $i nahi mila, skip."
 done
 
-echo ">>> [4/5] Extracting Configs..."
-# standard extraction without strip-components for safety
-tar -xvzf ~/configs.tar.gz -C ~ 
+echo ">>> [5/6] Configs extract ho rahe hain..."
+tar -xzf ~/configs.tar.gz --strip-components=5 -C ~
 rm ~/configs.tar.gz
 
-echo ">>> [5/5] Creating Professional start-desktop..."
+# ── DIRECT XML FIX: Config file mein galat path sed se replace karo ──
+DESKTOP_XML="$HOME/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml"
+if [ -f "$DESKTOP_XML" ]; then
+  # Koi bhi purana wallpaper path replace karo sahi path se
+  sed -i "s|value=\"[^\"]*\"|value=\"$HOME/Wallpapers/1.png\"|g" "$DESKTOP_XML"
+  # Folder path bhi fix karo
+  sed -i "s|Downloads|Wallpapers|g" "$DESKTOP_XML"
+  echo "  Wallpaper path XML mein fix ho gaya ✅"
+else
+  echo "  Desktop XML nahi mila, start-desktop se set hoga."
+fi
+
+echo ">>> [6/6] start-desktop script ban raha hai..."
 cat > ~/start-desktop << 'EOF'
 #!/data/data/com.termux/files/usr/bin/bash
+
+export PATH="/data/data/com.termux/files/usr/bin:$PATH"
 export DISPLAY=:1
 
-# 1. Start X11
+# X11 start karo
 termux-x11 :1 &
 sleep 4
 
-# 2. Advanced Wallpaper Fix (Fixes 'NULL' folder & Default Rat error)
-# This loop finds every monitor name (monitor0, monitorVirtual, etc.)
-for prop in $(xfconf-query -c xfce4-desktop -p /backdrop/screen0 -l | grep "workspace0/last-image"); do
-    MONITOR_PATH=$(echo $prop | cut -d'/' -f1-4)
-    xfconf-query -c xfce4-desktop -p ${MONITOR_PATH}/workspace0/image-folder -n -t string -s "$HOME/Wallpapers"
-    xfconf-query -c xfce4-desktop -p ${MONITOR_PATH}/workspace0/last-image -n -t string -s "$HOME/Wallpapers/1.png"
-    xfconf-query -c xfce4-desktop -p ${MONITOR_PATH}/workspace0/image-style -n -t int -s 5
-done
+# Wallpaper set karo (backup — agar XML se nahi hua to)
+xfconf-query -c xfce4-desktop \
+  -p /backdrop/screen0/monitor0/workspace0/last-image \
+  -s "$HOME/Wallpapers/1.png" --create -t string 2>/dev/null
 
-# 3. Apply Themes
-xfconf-query -c xsettings -p /Net/ThemeName -s "Catppuccin-Mocha-Standard-Blue-Dark" 2>/dev/null
-xfconf-query -c xsettings -p /Net/IconThemeName -s "Papirus-Dark" 2>/dev/null
+xfconf-query -c xfce4-desktop \
+  -p /backdrop/screen0/monitor0/workspace0/image-path \
+  -s "$HOME/Wallpapers" --create -t string 2>/dev/null
 
-# 4. Start Session
+xfconf-query -c xfce4-desktop \
+  -p /backdrop/screen0/monitor0/workspace0/image-show \
+  -s true --create -t bool 2>/dev/null
+
+xfconf-query -c xfce4-desktop \
+  -p /backdrop/screen0/monitor0/workspace0/image-style \
+  -s 5 --create -t int 2>/dev/null
+
+# Theme apply karo
+xfconf-query -c xsettings \
+  -p /Net/ThemeName \
+  -s "Catppuccin-Mocha-Standard-Blue-Dark" 2>/dev/null
+
+# Icon theme apply karo
+xfconf-query -c xsettings \
+  -p /Net/IconThemeName \
+  -s "Papirus-Dark" 2>/dev/null
+
+# XFCE4 launch karo
 xfce4-session
 EOF
-
 chmod +x ~/start-desktop
-echo "✅ Everything Fixed! Run: ./start-desktop"
+
+echo ""
+echo "✅ Setup complete!"
+echo "▶  Termux-X11 app kholo, phir Termux mein likho:  ./start-desktop"
+echo ""
