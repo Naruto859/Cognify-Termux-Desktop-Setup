@@ -31,16 +31,35 @@ echo ">>> [5/6] Configs extract ho rahe hain..."
 tar -xzf ~/configs.tar.gz --strip-components=5 -C ~
 rm ~/configs.tar.gz
 
-# ── DIRECT XML FIX: Config file mein galat path sed se replace karo ──
+# ── XML fix: Wallpaper path aur folder dono sahi karo ──
 DESKTOP_XML="$HOME/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml"
 if [ -f "$DESKTOP_XML" ]; then
-  # Koi bhi purana wallpaper path replace karo sahi path se
-  sed -i "s|value=\"[^\"]*\"|value=\"$HOME/Wallpapers/1.png\"|g" "$DESKTOP_XML"
-  # Folder path bhi fix karo
+  # Wallpaper file 1.png set karo
+  sed -i "s|value=\"[^\"]*Downloads[^\"]*\"|value=\"$HOME/Wallpapers/1.png\"|g" "$DESKTOP_XML"
+  # Folder path fix karo — taaki picker mein ~/Wallpapers dikhe
   sed -i "s|Downloads|Wallpapers|g" "$DESKTOP_XML"
-  echo "  Wallpaper path XML mein fix ho gaya ✅"
+  echo "  XML fix ho gaya ✅"
 else
-  echo "  Desktop XML nahi mila, start-desktop se set hoga."
+  # XML nahi mila to fresh bana do
+  mkdir -p "$(dirname "$DESKTOP_XML")"
+  cat > "$DESKTOP_XML" << XMLEOF
+<?xml version="1.0" encoding="UTF-8"?>
+<channel name="xfce4-desktop" version="1.0">
+  <property name="backdrop" type="empty">
+    <property name="screen0" type="empty">
+      <property name="monitor0" type="empty">
+        <property name="workspace0" type="empty">
+          <property name="image-path" type="string" value="$HOME/Wallpapers"/>
+          <property name="image-show" type="bool" value="true"/>
+          <property name="image-style" type="int" value="5"/>
+          <property name="last-image" type="string" value="$HOME/Wallpapers/1.png"/>
+        </property>
+      </property>
+    </property>
+  </property>
+</channel>
+XMLEOF
+  echo "  Fresh XML ban gaya ✅"
 fi
 
 echo ">>> [6/6] start-desktop script ban raha hai..."
@@ -54,14 +73,14 @@ export DISPLAY=:1
 termux-x11 :1 &
 sleep 4
 
-# Wallpaper set karo (backup — agar XML se nahi hua to)
-xfconf-query -c xfce4-desktop \
-  -p /backdrop/screen0/monitor0/workspace0/last-image \
-  -s "$HOME/Wallpapers/1.png" --create -t string 2>/dev/null
-
+# Wallpaper folder aur image dono set karo
 xfconf-query -c xfce4-desktop \
   -p /backdrop/screen0/monitor0/workspace0/image-path \
   -s "$HOME/Wallpapers" --create -t string 2>/dev/null
+
+xfconf-query -c xfce4-desktop \
+  -p /backdrop/screen0/monitor0/workspace0/last-image \
+  -s "$HOME/Wallpapers/1.png" --create -t string 2>/dev/null
 
 xfconf-query -c xfce4-desktop \
   -p /backdrop/screen0/monitor0/workspace0/image-show \
