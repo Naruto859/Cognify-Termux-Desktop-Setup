@@ -12,8 +12,8 @@ pkg update -y
 apt-get upgrade -y -o Dpkg::Options::="--force-confold"
 pkg install x11-repo -y
 
-echo ">>> [2/6] XFCE4, Chromium, Termux-X11 install ho raha hai..."
-pkg install xfce4 xfce4-goodies chromium termux-x11-nightly papirus-icon-theme -y
+echo ">>> [2/6] XFCE4, Chromium, Termux-X11, PulseAudio install ho raha hai..."
+pkg install xfce4 xfce4-goodies chromium termux-x11-nightly papirus-icon-theme pulseaudio -y
 
 echo ">>> [3/6] Configs download ho rahe hain..."
 curl -L https://github.com/Naruto859/Cognify-Termux-Desktop-Setup/raw/main/configs.tar.gz \
@@ -31,16 +31,13 @@ echo ">>> [5/6] Configs extract ho rahe hain..."
 tar -xzf ~/configs.tar.gz --strip-components=5 -C ~
 rm ~/configs.tar.gz
 
-# ── XML fix: Wallpaper path aur folder dono sahi karo ──
+# ── XML fix: Wallpaper path fix ──
 DESKTOP_XML="$HOME/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml"
 if [ -f "$DESKTOP_XML" ]; then
-  # Wallpaper file 1.png set karo
   sed -i "s|value=\"[^\"]*Downloads[^\"]*\"|value=\"$HOME/Wallpapers/1.png\"|g" "$DESKTOP_XML"
-  # Folder path fix karo — taaki picker mein ~/Wallpapers dikhe
   sed -i "s|Downloads|Wallpapers|g" "$DESKTOP_XML"
   echo "  XML fix ho gaya ✅"
 else
-  # XML nahi mila to fresh bana do
   mkdir -p "$(dirname "$DESKTOP_XML")"
   cat > "$DESKTOP_XML" << XMLEOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -62,18 +59,37 @@ XMLEOF
   echo "  Fresh XML ban gaya ✅"
 fi
 
+# ── PulseAudio global environment set karo ──
+echo "export PULSE_SERVER=127.0.0.1" >> ~/.bashrc
+echo "export PULSE_SERVER=127.0.0.1" >> ~/.profile
+mkdir -p ~/.config/environment.d
+echo "PULSE_SERVER=127.0.0.1" > ~/.config/environment.d/pulse.conf
+
 echo ">>> [6/6] start-desktop script ban raha hai..."
 cat > ~/start-desktop << 'EOF'
 #!/data/data/com.termux/files/usr/bin/bash
 
 export PATH="/data/data/com.termux/files/usr/bin:$PATH"
 export DISPLAY=:1
+export PULSE_SERVER=127.0.0.1
 
-# X11 start karo
+# ── PulseAudio start karo ──
+pulseaudio --kill 2>/dev/null
+sleep 1
+pulseaudio --start \
+  --load="module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" \
+  --exit-idle-time=-1
+
+# ── AAudio sink load karo (Android audio ke liye) ──
+sleep 1
+pactl load-module module-aaudio-sink 2>/dev/null
+pactl set-default-sink AAudio_sink 2>/dev/null
+
+# ── X11 start karo ──
 termux-x11 :1 &
 sleep 4
 
-# Wallpaper folder aur image dono set karo
+# ── Wallpaper set karo ──
 xfconf-query -c xfce4-desktop \
   -p /backdrop/screen0/monitor0/workspace0/image-path \
   -s "$HOME/Wallpapers" --create -t string 2>/dev/null
@@ -90,17 +106,17 @@ xfconf-query -c xfce4-desktop \
   -p /backdrop/screen0/monitor0/workspace0/image-style \
   -s 5 --create -t int 2>/dev/null
 
-# Theme apply karo
+# ── Theme apply karo ──
 xfconf-query -c xsettings \
   -p /Net/ThemeName \
   -s "Catppuccin-Mocha-Standard-Blue-Dark" 2>/dev/null
 
-# Icon theme apply karo
+# ── Icon theme apply karo ──
 xfconf-query -c xsettings \
   -p /Net/IconThemeName \
   -s "Papirus-Dark" 2>/dev/null
 
-# XFCE4 launch karo
+# ── XFCE4 launch karo ──
 xfce4-session
 EOF
 chmod +x ~/start-desktop
