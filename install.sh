@@ -72,14 +72,18 @@ grep -q "PULSE_SERVER" ~/.profile || echo "export PULSE_SERVER=127.0.0.1" >> ~/.
 mkdir -p ~/.config/environment.d
 echo "PULSE_SERVER=127.0.0.1" > ~/.config/environment.d/pulse.conf
 
-# ── Chromium wrapper — hamesha PULSE_SERVER ke saath khule ──
-CHROMIUM_REAL=$(which chromium-browser 2>/dev/null || which chromium 2>/dev/null)
-cat > /data/data/com.termux/files/usr/bin/chromium-browser << CHREOF
-#!/data/data/com.termux/files/usr/bin/bash
+# ── XFCE4 session environment mein PULSE_SERVER set karo ──
+# Isse har app ko — Chromium, VLC, sab ko — auto sound milega
+mkdir -p ~/.config/xfce4
+grep -q "PULSE_SERVER" ~/.config/xfce4/xinitrc 2>/dev/null || \
+  echo "export PULSE_SERVER=127.0.0.1" >> ~/.config/xfce4/xinitrc
+
+# Yah sabse important hai — sab apps is file se env lete hain
+mkdir -p ~/.config
+cat > ~/.config/xfce4/xinitrc << 'XIEOF'
 export PULSE_SERVER=127.0.0.1
-exec $CHROMIUM_REAL --no-sandbox "\$@"
-CHREOF
-chmod +x /data/data/com.termux/files/usr/bin/chromium-browser
+export PATH="/data/data/com.termux/files/usr/bin:$PATH"
+XIEOF
 
 echo ">>> [6/6] start-desktop script ban raha hai..."
 cat > ~/start-desktop << 'EOF'
