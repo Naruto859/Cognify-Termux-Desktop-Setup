@@ -57,33 +57,17 @@ else
 XMLEOF
 fi
 
+# ── PULSE_SERVER ko completely hatao (yahi problem thi) ──
+sed -i '/PULSE_SERVER/d' ~/.bashrc ~/.profile 2>/dev/null
+rm -f ~/.config/environment.d/pulse.conf 2>/dev/null
+
 # ── PulseAudio config — AAudio sink auto load ──
 mkdir -p ~/.config/pulse
 cat > ~/.config/pulse/default.pa << 'PAEOF'
 .include /data/data/com.termux/files/usr/etc/pulse/default.pa
-load-module module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1
 load-module module-aaudio-sink
 set-default-sink AAudio_sink
 PAEOF
-
-# ── PULSE_SERVER globally set karo ──
-grep -q "PULSE_SERVER" ~/.bashrc || echo "export PULSE_SERVER=127.0.0.1" >> ~/.bashrc
-grep -q "PULSE_SERVER" ~/.profile || echo "export PULSE_SERVER=127.0.0.1" >> ~/.profile
-mkdir -p ~/.config/environment.d
-echo "PULSE_SERVER=127.0.0.1" > ~/.config/environment.d/pulse.conf
-
-# ── XFCE4 session environment mein PULSE_SERVER set karo ──
-# Isse har app ko — Chromium, VLC, sab ko — auto sound milega
-mkdir -p ~/.config/xfce4
-grep -q "PULSE_SERVER" ~/.config/xfce4/xinitrc 2>/dev/null || \
-  echo "export PULSE_SERVER=127.0.0.1" >> ~/.config/xfce4/xinitrc
-
-# Yah sabse important hai — sab apps is file se env lete hain
-mkdir -p ~/.config
-cat > ~/.config/xfce4/xinitrc << 'XIEOF'
-export PULSE_SERVER=127.0.0.1
-export PATH="/data/data/com.termux/files/usr/bin:$PATH"
-XIEOF
 
 echo ">>> [6/6] start-desktop script ban raha hai..."
 cat > ~/start-desktop << 'EOF'
@@ -91,16 +75,12 @@ cat > ~/start-desktop << 'EOF'
 
 export PATH="/data/data/com.termux/files/usr/bin:$PATH"
 export DISPLAY=:1
-export PULSE_SERVER=127.0.0.1
 
 # ── PulseAudio start karo ──
 pulseaudio --kill 2>/dev/null
 sleep 1
 pulseaudio --start --exit-idle-time=-1
 sleep 2
-
-# ── AAudio sink set karo (backup) ──
-pactl set-default-sink AAudio_sink 2>/dev/null
 
 # ── X11 start karo ──
 termux-x11 :1 &
