@@ -31,12 +31,11 @@ echo ">>> [5/6] Configs extract ho rahe hain..."
 tar -xzf ~/configs.tar.gz --strip-components=5 -C ~
 rm ~/configs.tar.gz
 
-# ── XML fix: Wallpaper path fix ──
+# ── Wallpaper XML fix ──
 DESKTOP_XML="$HOME/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml"
 if [ -f "$DESKTOP_XML" ]; then
   sed -i "s|value=\"[^\"]*Downloads[^\"]*\"|value=\"$HOME/Wallpapers/1.png\"|g" "$DESKTOP_XML"
   sed -i "s|Downloads|Wallpapers|g" "$DESKTOP_XML"
-  echo "  XML fix ho gaya ✅"
 else
   mkdir -p "$(dirname "$DESKTOP_XML")"
   cat > "$DESKTOP_XML" << XMLEOF
@@ -56,14 +55,31 @@ else
   </property>
 </channel>
 XMLEOF
-  echo "  Fresh XML ban gaya ✅"
 fi
 
-# ── PulseAudio global environment set karo ──
-echo "export PULSE_SERVER=127.0.0.1" >> ~/.bashrc
-echo "export PULSE_SERVER=127.0.0.1" >> ~/.profile
+# ── PulseAudio config — AAudio sink auto load ──
+mkdir -p ~/.config/pulse
+cat > ~/.config/pulse/default.pa << 'PAEOF'
+.include /data/data/com.termux/files/usr/etc/pulse/default.pa
+load-module module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1
+load-module module-aaudio-sink
+set-default-sink AAudio_sink
+PAEOF
+
+# ── PULSE_SERVER globally set karo ──
+grep -q "PULSE_SERVER" ~/.bashrc || echo "export PULSE_SERVER=127.0.0.1" >> ~/.bashrc
+grep -q "PULSE_SERVER" ~/.profile || echo "export PULSE_SERVER=127.0.0.1" >> ~/.profile
 mkdir -p ~/.config/environment.d
 echo "PULSE_SERVER=127.0.0.1" > ~/.config/environment.d/pulse.conf
+
+# ── Chromium wrapper — hamesha PULSE_SERVER ke saath khule ──
+CHROMIUM_REAL=$(which chromium-browser 2>/dev/null || which chromium 2>/dev/null)
+cat > /data/data/com.termux/files/usr/bin/chromium-browser << CHREOF
+#!/data/data/com.termux/files/usr/bin/bash
+export PULSE_SERVER=127.0.0.1
+exec $CHROMIUM_REAL --no-sandbox "\$@"
+CHREOF
+chmod +x /data/data/com.termux/files/usr/bin/chromium-browser
 
 echo ">>> [6/6] start-desktop script ban raha hai..."
 cat > ~/start-desktop << 'EOF'
@@ -76,13 +92,10 @@ export PULSE_SERVER=127.0.0.1
 # ── PulseAudio start karo ──
 pulseaudio --kill 2>/dev/null
 sleep 1
-pulseaudio --start \
-  --load="module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" \
-  --exit-idle-time=-1
+pulseaudio --start --exit-idle-time=-1
+sleep 2
 
-# ── AAudio sink load karo (Android audio ke liye) ──
-sleep 1
-pactl load-module module-aaudio-sink 2>/dev/null
+# ── AAudio sink set karo (backup) ──
 pactl set-default-sink AAudio_sink 2>/dev/null
 
 # ── X11 start karo ──
@@ -93,27 +106,20 @@ sleep 4
 xfconf-query -c xfce4-desktop \
   -p /backdrop/screen0/monitor0/workspace0/image-path \
   -s "$HOME/Wallpapers" --create -t string 2>/dev/null
-
 xfconf-query -c xfce4-desktop \
   -p /backdrop/screen0/monitor0/workspace0/last-image \
   -s "$HOME/Wallpapers/1.png" --create -t string 2>/dev/null
-
 xfconf-query -c xfce4-desktop \
   -p /backdrop/screen0/monitor0/workspace0/image-show \
   -s true --create -t bool 2>/dev/null
-
 xfconf-query -c xfce4-desktop \
   -p /backdrop/screen0/monitor0/workspace0/image-style \
   -s 5 --create -t int 2>/dev/null
 
 # ── Theme apply karo ──
-xfconf-query -c xsettings \
-  -p /Net/ThemeName \
+xfconf-query -c xsettings -p /Net/ThemeName \
   -s "Catppuccin-Mocha-Standard-Blue-Dark" 2>/dev/null
-
-# ── Icon theme apply karo ──
-xfconf-query -c xsettings \
-  -p /Net/IconThemeName \
+xfconf-query -c xsettings -p /Net/IconThemeName \
   -s "Papirus-Dark" 2>/dev/null
 
 # ── XFCE4 launch karo ──
