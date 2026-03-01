@@ -57,11 +57,11 @@ else
 XMLEOF
 fi
 
-# ── PULSE_SERVER ko completely hatao (yahi problem thi) ──
+# ── PULSE_SERVER hatao ──
 sed -i '/PULSE_SERVER/d' ~/.bashrc ~/.profile 2>/dev/null
 rm -f ~/.config/environment.d/pulse.conf 2>/dev/null
 
-# ── PulseAudio config — AAudio sink auto load ──
+# ── PulseAudio config ──
 mkdir -p ~/.config/pulse
 cat > ~/.config/pulse/default.pa << 'PAEOF'
 .include /data/data/com.termux/files/usr/etc/pulse/default.pa
@@ -76,9 +76,16 @@ cat > ~/start-desktop << 'EOF'
 export PATH="/data/data/com.termux/files/usr/bin:$PATH"
 export DISPLAY=:1
 
-# ── PulseAudio start karo ──
+# ── PulseAudio puri tarah saaf karke restart karo ──
+# Force stop ke baad purane socket files reh jaate hain — inhe hatao
 pulseaudio --kill 2>/dev/null
 sleep 1
+rm -rf /data/data/com.termux/files/usr/var/run/pulse/ 2>/dev/null
+rm -rf /data/data/com.termux/files/home/.config/pulse/*.pid 2>/dev/null
+rm -rf /tmp/pulse-* 2>/dev/null
+sleep 1
+
+# Fresh start karo
 pulseaudio --start --exit-idle-time=-1
 sleep 2
 
